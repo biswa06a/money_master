@@ -86,6 +86,15 @@
     function submitWithdraw() {
       alert("Withdraw request submitted!");
     }
+    <!-- Add this inside <body> BELOW the withdraw form section -->
+<div class="withdraw-status-container">
+  <h2 class="status-title">Withdrawal Status</h2>
+  <div id="statusList" class="status-list">
+    <!-- Withdrawal statuses will appear here dynamically -->
+    <p>Loading your withdrawal history...</p>
+  </div>
+</div>
+
   </script>
 
   <!-- Now the Firebase fetch logic will come from withdraw.js -->
