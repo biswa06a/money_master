@@ -153,3 +153,67 @@ window.submitWithdraw = async function () {
     alert("Failed to submit withdrawal. Try again.");
   }
 };
+import {
+  query,
+  orderBy,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+// Load withdrawal history
+async function loadWithdrawalHistory() {
+  const uid = localStorage.getItem("userUID");
+  const statusList = document.getElementById("statusList");
+
+  if (!uid) {
+    statusList.innerHTML = "<p>Please login to view your history.</p>";
+    return;
+  }
+
+  try {
+    const requestRef = collection(db, "Withdrawals", uid, "requests");
+    const q = query(requestRef, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      statusList.innerHTML = "<p>No withdrawals yet.</p>";
+      return;
+    }
+
+    // Clear previous content
+    statusList.innerHTML = "";
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
+      const entry = document.createElement("div");
+      entry.classList.add("status-entry");
+
+      // Add status class
+      entry.classList.add(data.status.toLowerCase());
+
+      // Format timestamp
+      const createdAt = data.createdAt?.toDate().toLocaleString() || "Unknown date";
+
+      // Build display text
+      entry.innerHTML = `
+        <p><strong>Method:</strong> ${data.method.toUpperCase()}</p>
+        <p><strong>Amount:</strong> ₹${data.amount}</p>
+        <p><strong>Status:</strong> ${capitalize(data.status)}</p>
+        <p><strong>Requested At:</strong> ${createdAt}</p>
+      `;
+
+      statusList.appendChild(entry);
+    });
+  } catch (err) {
+    console.error("Error loading history:", err);
+    statusList.innerHTML = "<p>Error loading history.</p>";
+  }
+}
+
+// Utility: Capitalize string
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Load history on page load
+window.addEventListener("DOMContentLoaded", loadWithdrawalHistory);
