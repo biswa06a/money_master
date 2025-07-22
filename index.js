@@ -8,9 +8,15 @@ import {
   where,
   getDocs
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 
-// Firebase configuration
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDVUzBgRChD8FhdgMoKosCLpLX3zGgWB_0",
   authDomain: "money-master-official-site-new.firebaseapp.com",
@@ -24,13 +30,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// Helper to generate 15-digit referral code
+// Generate 15-digit referral code
 function generateReferralCode() {
   return Math.floor(Math.random() * 1e15).toString().padStart(15, "0");
 }
 
-// Register new user
+// ✅ Register new user
 window.registerUser = async function () {
   const name = document.getElementById("name").value.trim();
   const uid = document.getElementById("uid").value.trim();
@@ -51,19 +58,20 @@ window.registerUser = async function () {
   }
 
   let referredBy = null;
-
-  // Validate referral code if provided
   if (referralInput) {
     const q = query(collection(db, "User"), where("referralCode", "==", referralInput));
     const refSnap = await getDocs(q);
     if (!refSnap.empty) {
-      referredBy = refSnap.docs[0].id; // store UID of the referrer
+      referredBy = refSnap.docs[0].id;
     } else {
       alert("Invalid referral code. Continuing without referral.");
     }
   }
 
   const newReferralCode = generateReferralCode();
+
+  // ✅ Login anonymously before writing to Firestore
+  await signInAnonymously(auth);
 
   await setDoc(userRef, {
     name,
@@ -73,6 +81,8 @@ window.registerUser = async function () {
     referralCode: newReferralCode,
     referredBy: referredBy || null,
     coins: 0,
+    isAdmin: false,
+    isVerified: false,
     createdAt: new Date().toISOString()
   });
 
@@ -84,7 +94,7 @@ window.registerUser = async function () {
   window.location.href = "tap.html";
 };
 
-// Login existing user
+// ✅ Login existing user
 window.loginUser = async function () {
   const uid = document.getElementById("uid").value.trim();
   const pin = document.getElementById("pin").value.trim();
@@ -107,6 +117,9 @@ window.loginUser = async function () {
     alert("Incorrect PIN.");
     return;
   }
+
+  // ✅ Login anonymously to access Firestore
+  await signInAnonymously(auth);
 
   localStorage.setItem("userUID", uid);
   localStorage.setItem("userName", data.name);
